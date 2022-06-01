@@ -1,100 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const stuffCtrl = require('../controllers/stuff');
 
-const Thing = require('../models/thing');
 
-router.post('/', (req, res, next) => {
-  const thing = new Thing({
-    title: req.body.title,
-    description: req.body.description,
-    imageUrl: req.body.imageUrl,
-    price: req.body.price,
-    userId: req.body.userId
+
+
+// Middleware d'extraction du corps json pour POST
+// Express prend toutes les requêtes qui ont comme Content-Type  application/json  et met à disposition leur  body  directement sur l'objet req
+router.use(express.json()); 
+
+// Middleware de vérification du token + upload images
+const auth = require('../middleware/auth');
+const multer = require('../middleware/multer-config');
+
+// Middleware
+// S'applique à toutes les routes
+router.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    next();
   });
-  thing.save().then(
-    () => {
-      res.status(201).json({
-        message: 'Post saved successfully!'
-      });
-    }
-  ).catch(
-    (error) => {
-      res.status(400).json({
-        error: error
-      });
-    }
-  );
-});
 
-router.get('/:id', (req, res, next) => {
-  Thing.findOne({
-    _id: req.params.id
-  }).then(
-    (thing) => {
-      res.status(200).json(thing);
-    }
-  ).catch(
-    (error) => {
-      res.status(404).json({
-        error: error
-      });
-    }
-  );
-});
 
-router.put('/:id', (req, res, next) => {
-  const thing = new Thing({
-    _id: req.params.id,
-    title: req.body.title,
-    description: req.body.description,
-    imageUrl: req.body.imageUrl,
-    price: req.body.price,
-    userId: req.body.userId
-  });
-  Thing.updateOne({_id: req.params.id}, thing).then(
-    () => {
-      res.status(201).json({
-        message: 'Thing updated successfully!'
-      });
-    }
-  ).catch(
-    (error) => {
-      res.status(400).json({
-        error: error
-      });
-    }
-  );
-});
-
-router.delete('/:id', (req, res, next) => {
-  Thing.deleteOne({_id: req.params.id}).then(
-    () => {
-      res.status(200).json({
-        message: 'Deleted!'
-      });
-    }
-  ).catch(
-    (error) => {
-      res.status(400).json({
-        error: error
-      });
-    }
-  );
-});
-
-router.get('/' +
-  '', (req, res, next) => {
-  Thing.find().then(
-    (things) => {
-      res.status(200).json(things);
-    }
-  ).catch(
-    (error) => {
-      res.status(400).json({
-        error: error
-      });
-    }
-  );
-});
+router.get('/', auth, stuffCtrl.getAllStuff);
+router.post('/', auth, multer, stuffCtrl.createThing);
+router.get('/:id', auth, stuffCtrl.getOneThing);
+router.put('/:id', auth, multer, stuffCtrl.modifyThing);
+router.delete('/:id', auth, stuffCtrl.deleteThing);
 
 module.exports = router;
